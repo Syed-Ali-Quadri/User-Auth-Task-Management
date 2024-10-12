@@ -1,7 +1,7 @@
 // Import the Router class from the Express framework for creating routes
 import { Router } from "express";
 // Import the changePassword, loginUser, and registerUser controller functions
-import { changeDetail, changePassword, loginUser, registerUser } from "../controllers/user.controller.js";
+import { changeDetail, changePassword, currentUser, loginUser, registerUser } from "../controllers/user.controller.js";
 // Import the verifyAuth middleware to protect certain routes
 import { verifyAuth } from "../middlewares/auth.middleware.js";
 
@@ -23,6 +23,7 @@ router.route("/login").get(loginUser);
 router.route("/change-password").put(verifyAuth, changePassword);
 
 router.route("/change-details").put(verifyAuth, changeDetail);
+router.route("/current-user").get(verifyAuth, currentUser);
 
 // Export the router for use in other modules (like the main app) to handle the routes
 export default router;

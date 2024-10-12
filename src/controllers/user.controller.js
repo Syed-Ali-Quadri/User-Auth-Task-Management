@@ -195,5 +195,12 @@ const changeDetail = AsyncHandler(async (req, res) => {
 	.json(new ApiResponse(200,updatedUser, "Details changed successfully."))
 })
 
+const currentUser = AsyncHandler(async (req, res) => {
+
+	const user = await User.findById(req.user?.id).select("-password -refreshToken")
+
+	return res.status(200).json(new ApiResponse(200, user, "User details fetch successfully"))
+})
+
 // Export user functions for use in routes
-export { registerUser, loginUser, changePassword, changeDetail };
+export { registerUser, loginUser, changePassword, changeDetail, currentUser };
