@@ -95,6 +95,10 @@ const loginUser = AsyncHandler(async (req, res) => {
 		RefreshToken
 	} = await generateAccessTokenAndRefreshToken(checkUser._id);
 
+	checkUser.refreshToken = RefreshToken;
+
+	await checkUser.save();
+
 	// Step 8: Retrieve user details without sensitive information (password, refreshToken)
 	const logginUser = await User.findById(checkUser._id).select(
 		"-password -refreshToken"
@@ -154,6 +158,42 @@ const changePassword = AsyncHandler(async (req, res) => {
 		.json(new ApiResponse(200, "Password changed successfully."));
 });
 
+const changeDetail = AsyncHandler(async (req, res) => {
+	const { newFullName, newUsername, newEmail } = req.body;
+	
+	const user = await User.findById(req.user.id)
+	console.log("Request user: ", user)
+
+	if(!newFullName && !newUsername && !newEmail) throw new ApiError(401, "Please fill any of the fields.")
+
+    let isUpdated = false;
+
+    if (newFullName && newFullName !== user.fullName) {
+        user.fullName = newFullName;
+        isUpdated = true;
+    }
+
+    if (newEmail && newEmail !== user.email) {
+        user.email = newEmail;
+        isUpdated = true;
+    }
+    if (newUsername && newUsername !== user.username) {
+        user.username = newUsername;
+        isUpdated = true;
+    }
+
+    if (isUpdated) {
+        await user.save(); // Saving updated user data.
+    } else {
+        throw new ApiError(400, "No changes to update.");
+    }
+
+	const updatedUser = await User.findById(user._id).select("-password -refreshToken")
+
+	return res
+	.status(200)
+	.json(new ApiResponse(200,updatedUser, "Details changed successfully."))
+})
 
 // Export user functions for use in routes
-export { registerUser, loginUser, changePassword };
+export { registerUser, loginUser, changePassword, changeDetail };
