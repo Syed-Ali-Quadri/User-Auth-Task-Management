@@ -47,11 +47,11 @@ userSchema.pre("save", async function (next) {
 	next();
 });
 
-userSchema.methods.isPasswordCorrect = async (password) => {
+userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
 }
 
-userSchema.method.generateAccessToken = async () => {
+userSchema.methods.generateAccessToken = async function () {
     return jwt.sign({
         id: this._id,
         username: this.username,
@@ -62,7 +62,7 @@ userSchema.method.generateAccessToken = async () => {
     })
 }
 
-userSchema.method.generateRefreshToken = async () => {
+userSchema.methods.generateRefreshToken = async function () {
     return jwt.sign({
         id: this._id
     }, process.env.REFRESH_TOKEN, {
