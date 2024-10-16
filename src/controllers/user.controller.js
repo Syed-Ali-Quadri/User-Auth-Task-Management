@@ -97,7 +97,7 @@ const loginUser = AsyncHandler(async (req, res) => {
 
 	checkUser.refreshToken = RefreshToken;
 
-	await checkUser.save();
+	await checkUser.save({ validateBeforeSave: true });
 
 	// Step 8: Retrieve user details without sensitive information (password, refreshToken)
 	const logginUser = await User.findById(checkUser._id).select(
@@ -202,5 +202,9 @@ const currentUser = AsyncHandler(async (req, res) => {
 	return res.status(200).json(new ApiResponse(200, user, "User details fetch successfully"))
 })
 
+const getRefreshToken = AsyncHandler(async (req, res) => {
+	
+})
+
 // Export user functions for use in routes
-export { registerUser, loginUser, changePassword, changeDetail, currentUser };
+export { registerUser, loginUser, changePassword, changeDetail, currentUser, getRefreshToken };
