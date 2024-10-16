@@ -41,7 +41,7 @@ router.route("/current-user").get(verifyAuth, currentUser);
 
 // Define the /refresh-token route to get a new access token using a refresh token
 // This route helps users stay logged in by requesting a new access token after the previous one expires
-router.route("/refresh-token").get(verifyAuth, getRefreshToken);
+router.route("/refresh-token").put(verifyAuth, getRefreshToken);
 
 // Export the router so it can be used in the main application to handle the defined routes
 export default router;

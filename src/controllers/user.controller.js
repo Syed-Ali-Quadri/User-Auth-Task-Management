@@ -47,7 +47,7 @@ const registerUser = AsyncHandler(async (req, res) => {
 });
 
 // Function to generate access and refresh tokens for a given user ID
-const generateAccessTokenAndRefreshToken = async userId => {
+const generateAccessTokenAndRefreshToken = async (userId) => {
 	// Step 1: Find the user by their ID
 	const user = await User.findById(userId);
 
@@ -158,53 +158,108 @@ const changePassword = AsyncHandler(async (req, res) => {
 		.json(new ApiResponse(200, "Password changed successfully."));
 });
 
+// Function to change user details (full name, username, email)
 const changeDetail = AsyncHandler(async (req, res) => {
 	const { newFullName, newUsername, newEmail } = req.body;
 	
-	const user = await User.findById(req.user.id)
-	console.log("Request user: ", user)
+	const user = await User.findById(req.user.id);
+	console.log("Request user: ", user);
 
-	if(!newFullName && !newUsername && !newEmail) throw new ApiError(401, "Please fill any of the fields.")
+	// Check if no fields were provided
+	if (!newFullName && !newUsername && !newEmail) throw new ApiError(401, "Please fill any of the fields.");
 
-    let isUpdated = false;
+	let isUpdated = false;
 
-    if (newFullName && newFullName !== user.fullName) {
-        user.fullName = newFullName;
-        isUpdated = true;
-    }
+	// Update full name if provided
+	if (newFullName && newFullName !== user.fullName) {
+		user.fullName = newFullName;
+		isUpdated = true;
+	}
 
-    if (newEmail && newEmail !== user.email) {
-        user.email = newEmail;
-        isUpdated = true;
-    }
-    if (newUsername && newUsername !== user.username) {
-        user.username = newUsername;
-        isUpdated = true;
-    }
+	// Update email if provided
+	if (newEmail && newEmail !== user.email) {
+		user.email = newEmail;
+		isUpdated = true;
+	}
 
-    if (isUpdated) {
-        await user.save(); // Saving updated user data.
-    } else {
-        throw new ApiError(400, "No changes to update.");
-    }
+	// Update username if provided
+	if (newUsername && newUsername !== user.username) {
+		user.username = newUsername;
+		isUpdated = true;
+	}
 
-	const updatedUser = await User.findById(user._id).select("-password -refreshToken")
+	// Save the updated user if any changes were made
+	if (isUpdated) {
+		await user.save();
+	} else {
+		throw new ApiError(400, "No changes to update.");
+	}
 
+	// Retrieve updated user data without sensitive information
+	const updatedUser = await User.findById(user._id).select("-password -refreshToken");
+
+	// Send success response with updated user details
 	return res
-	.status(200)
-	.json(new ApiResponse(200,updatedUser, "Details changed successfully."))
-})
+		.status(200)
+		.json(new ApiResponse(200, updatedUser, "Details changed successfully."));
+});
 
+// Function to retrieve current logged-in user details
 const currentUser = AsyncHandler(async (req, res) => {
+	// Find the user by their ID, omitting sensitive information
+	const user = await User.findById(req.user?.id).select("-password -refreshToken");
 
-	const user = await User.findById(req.user?.id).select("-password -refreshToken")
+	// Send success response with user details
+	return res.status(200).json(new ApiResponse(200, user, "User details fetched successfully"));
+});
 
-	return res.status(200).json(new ApiResponse(200, user, "User details fetch successfully"))
-})
-
+// Function to refresh access and refresh tokens
 const getRefreshToken = AsyncHandler(async (req, res) => {
-	
-})
+	const refreshToken = req.cookies?.refreshToken;
+	console.log("Cookies : ", refreshToken); // Log refresh token for debugging
 
-// Export user functions for use in routes
-export { registerUser, loginUser, changePassword, changeDetail, currentUser, getRefreshToken };
+	// Ensure the refresh token is present
+	if (!refreshToken) throw new ApiError(401, "No refresh token found");
+
+	// Find user by their refresh token
+	const user = await User.findOne({ refreshToken });
+	console.log("User: ", user);
+
+	// Generate new tokens
+	const AccessToken = await user.generateAccessToken();
+	const RefreshToken = await user.generateRefreshToken();
+
+	// Update user's refresh token in the database
+	user.refreshToken = RefreshToken;
+	await user.save({ validateBeforeSave: true });
+
+	// Set cookies for the new tokens
+	const options = {
+		httpOnly: true,
+		secure: true,
+		sameSite: "Strict"
+	};
+
+	// Send the response with the new tokens and user data
+	return res
+		.status(200)
+		.cookie("refreshToken", RefreshToken, options)
+		.cookie("accessToken", AccessToken, options)
+		.json(
+			new ApiResponse(
+				200,
+				{ AccessToken, RefreshToken },
+				"Successfully refreshed token"
+			)
+		);
+});
+
+// Export the controller functions
+export {
+	registerUser,
+	loginUser,
+	changePassword,
+	currentUser,
+	changeDetail,
+	getRefreshToken
+};
