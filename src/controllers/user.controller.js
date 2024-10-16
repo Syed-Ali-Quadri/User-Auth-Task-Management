@@ -196,7 +196,7 @@ const changeDetail = AsyncHandler(async (req, res) => {
 	}
 
 	// Retrieve updated user data without sensitive information
-	const updatedUser = await User.findById(user._id).select("-password -refreshToken");
+const updatedUser = await User.findById(user._id).select("-password -refreshToken");
 
 	// Send success response with updated user details
 	return res
